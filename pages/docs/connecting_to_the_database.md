@@ -128,6 +128,33 @@ gormDB, err := gorm.Open(postgres.New(postgres.Config{
 }), &gorm.Config{})
 ```
 
+### Connection hooks
+
+GORM works on top of `database/sql`, so there is no GORM-level hook for every newly established physical connection. Configure connection hooks in the underlying driver/pool and pass the resulting `*sql.DB` to GORM. For example, with pgx:
+
+```go
+import (
+  "context"
+
+  "github.com/jackc/pgx/v5"
+  "github.com/jackc/pgx/v5/stdlib"
+  "gorm.io/driver/postgres"
+  "gorm.io/gorm"
+)
+
+config, err := pgx.ParseConfig(dsn)
+if err != nil {
+  // handle error
+}
+
+sqlDB := stdlib.OpenDB(*config, stdlib.OptionAfterConnect(func(ctx context.Context, conn *pgx.Conn) error {
+  // runs for each newly established connection
+  return nil
+}))
+
+db, err := gorm.Open(postgres.New(postgres.Config{Conn: sqlDB}), &gorm.Config{})
+```
+
 ## GaussDB
 
 ```go
